@@ -5,6 +5,7 @@ export async function fetchRobotSnapshot() {
     status: "IDLE",
     statusCode: "I2LF",
     uptime: "12:14:32",
+    serverUrl: "",
     lastItem: "Plastic Bottle",
     counts: {
       trash: 42,

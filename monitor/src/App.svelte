@@ -6,6 +6,7 @@
     status: "CONNECTING",
     statusCode: "----",
     uptime: "--:--:--",
+    serverUrl: "",
     lastItem: "Awaiting data",
     counts: { trash: 0, recycle: 0 },
     analytics: [
@@ -30,6 +31,10 @@
       </div>
     </div>
     <div class="clock">
+      <div class="server">
+        <span class="pill">Server</span>
+        <strong>{snapshot.serverUrl || "Not Set"}</strong>
+      </div>
       <span class="pill">Uptime</span>
       <strong>{snapshot.uptime}</strong>
     </div>
@@ -186,6 +191,15 @@
     align-items: center;
     gap: 12px;
     font-size: 14px;
+  }
+
+  .server {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-right: 12px;
+    margin-right: 12px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .pill {
