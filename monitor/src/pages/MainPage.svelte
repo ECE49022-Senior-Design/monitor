@@ -1,5 +1,14 @@
 <script>
   export let snapshot;
+
+  $: speedPoints = (snapshot.speedHistory || []).map((value, index, history) => {
+    const width = 240;
+    const height = 100;
+    const safeValue = Math.max(0, Math.min(100, value));
+    const x = history.length > 1 ? (index / (history.length - 1)) * width : width / 2;
+    const y = height - (safeValue / 100) * height;
+    return `${x},${y}`;
+  }).join(" ");
 </script>
 
 <main class="screen">
@@ -68,6 +77,14 @@
             </div>
           </div>
         </div>
+
+        <div class="controls-section">
+          <div class="section-label">Controls</div>
+          <div class="inline-controls">
+            <button class="control-button pause large" type="button">Pause</button>
+            <button class="control-button stop large" type="button">Emergency Stop</button>
+          </div>
+        </div>
       </div>
     </article>
 
@@ -88,21 +105,20 @@
         <div class="counter-sub">This shift</div>
       </div>
 
-      <div class="analytics-bar">
+      <div class="analytics-bar trend-panel">
         <div class="analytics-header">
-          <h4>Detailed Analytics</h4>
-          <span>Live sample</span>
+          <h4>Speed Trend</h4>
+          <span>Recent cycles</span>
         </div>
-        <div class="analytics-track">
-          {#each snapshot.analytics as item}
-            <div class="analytics-item">
-              <div class="analytics-label">{item.label}</div>
-              <div class="analytics-meter">
-                <div class="analytics-fill" style={`width: ${item.value}%`}></div>
-              </div>
-              <div class="analytics-value">{item.value}%</div>
-            </div>
-          {/each}
+        <div class="line-graph" aria-label="Speed line graph">
+          <div class="line-grid"></div>
+          <svg viewBox="0 0 240 100" preserveAspectRatio="none" role="img" aria-label="Speed history">
+            <polyline points={speedPoints} />
+          </svg>
+          <div class="line-labels">
+            <span>Start</span>
+            <span>Current</span>
+          </div>
         </div>
       </div>
     </aside>

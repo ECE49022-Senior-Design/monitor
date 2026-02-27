@@ -1,22 +1,15 @@
 <script>
   import { onMount } from "svelte";
-  import { fetchRobotSnapshot } from "./lib/backend.js";
+  import {
+    connectMainframeSocket,
+    createPlaceholderSnapshot,
+    fetchRobotSnapshot,
+    normalizeMainframePayload,
+  } from "./lib/backend.js";
   import MainPage from "./pages/MainPage.svelte";
   import AnalyticsPage from "./pages/AnalyticsPage.svelte";
 
-  let snapshot = {
-    status: "CONNECTING",
-    statusCode: "----",
-    uptime: "--:--:--",
-    serverUrl: "",
-    lastItem: "Awaiting data",
-    counts: { trash: 0, recycle: 0 },
-    analytics: [
-      { label: "Accuracy", value: 0 },
-      { label: "Speed", value: 0 },
-      { label: "Quality", value: 0 },
-    ],
-  };
+  let snapshot = createPlaceholderSnapshot();
 
   let page = "main";
 
@@ -27,9 +20,15 @@
 
   onMount(async () => {
     snapshot = await fetchRobotSnapshot();
+    const disconnect = connectMainframeSocket((payload) => {
+      snapshot = normalizeMainframePayload(payload, snapshot);
+    });
     syncPage();
     window.addEventListener("hashchange", syncPage);
-    return () => window.removeEventListener("hashchange", syncPage);
+    return () => {
+      window.removeEventListener("hashchange", syncPage);
+      disconnect();
+    };
   });
 </script>
 

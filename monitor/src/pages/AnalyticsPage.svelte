@@ -18,6 +18,10 @@
       </div>
       <span class="pill">Uptime</span>
       <strong>{snapshot.uptime}</strong>
+      <div class="control-group">
+        <button class="control-button pause" type="button">Pause</button>
+        <button class="control-button stop" type="button">Emergency Stop</button>
+      </div>
       <a class="nav-button" href="#main">Back</a>
     </div>
   </header>
