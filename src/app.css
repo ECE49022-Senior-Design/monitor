@@ -278,9 +278,11 @@ h2 {
   padding: 12px 14px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  transition: background 160ms ease, border-color 160ms ease;
 }
 
-.flow-step.active {
+.flow-step.completed {
   border: 1px solid rgba(110, 247, 196, 0.4);
   background: rgba(110, 247, 196, 0.1);
 }
@@ -290,13 +292,47 @@ h2 {
   height: 10px;
   margin-top: 6px;
   border-radius: 50%;
-  background: #6ef7c4;
+  background: rgba(242, 245, 247, 0.45);
 }
 
 .flow-step p {
   margin: 4px 0 0;
   font-size: 12px;
   color: rgba(242, 245, 247, 0.6);
+}
+
+.flow-step.completed .dot {
+  background: #6ef7c4;
+}
+
+.flow-step.checking.active {
+  border-color: rgba(255, 196, 61, 0.55);
+  background: rgba(255, 196, 61, 0.14);
+}
+
+.flow-step.checking.active .dot {
+  background: #ffd56e;
+  box-shadow: 0 0 10px rgba(255, 196, 61, 0.7);
+}
+
+.flow-step.sorting.active {
+  border-color: rgba(63, 224, 255, 0.55);
+  background: rgba(63, 224, 255, 0.15);
+}
+
+.flow-step.sorting.active .dot {
+  background: #3fe0ff;
+  box-shadow: 0 0 10px rgba(63, 224, 255, 0.65);
+}
+
+.flow-step.complete.active {
+  border-color: rgba(110, 247, 196, 0.55);
+  background: rgba(110, 247, 196, 0.14);
+}
+
+.flow-step.complete.active .dot {
+  background: #6ef7c4;
+  box-shadow: 0 0 10px rgba(110, 247, 196, 0.7);
 }
 
 .counter-panel {

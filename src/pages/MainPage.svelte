@@ -1,5 +1,17 @@
 <script>
+  import { sendOperatorAction } from "../lib/backend.js";
+
   export let snapshot;
+
+  function getFlowStep(status = "") {
+    const normalized = String(status).toLowerCase();
+    if (normalized.includes("check")) return 0;
+    if (normalized.includes("sort") || normalized.includes("busy")) return 1;
+    if (normalized.includes("complete") || normalized.includes("done")) return 2;
+    return -1;
+  }
+
+  $: currentFlowStep = getFlowStep(snapshot.status);
 
   $: speedPoints = (snapshot.speedHistory || []).map((value, index, history) => {
     const width = 240;
@@ -55,21 +67,21 @@
         </div>
 
         <div class="flow">
-          <div class="flow-step active">
+          <div class="flow-step checking" class:active={currentFlowStep === 0} class:completed={currentFlowStep > 0}>
             <span class="dot"></span>
             <div>
               <strong>Checking</strong>
               <p>Scanning incoming item</p>
             </div>
           </div>
-          <div class="flow-step">
+          <div class="flow-step sorting" class:active={currentFlowStep === 1} class:completed={currentFlowStep > 1}>
             <span class="dot"></span>
             <div>
               <strong>Sorting</strong>
               <p>Assigning to bin</p>
             </div>
           </div>
-          <div class="flow-step">
+          <div class="flow-step complete" class:active={currentFlowStep === 2}>
             <span class="dot"></span>
             <div>
               <strong>Complete</strong>
@@ -81,8 +93,8 @@
         <div class="controls-section">
           <div class="section-label">Controls</div>
           <div class="inline-controls">
-            <button class="control-button pause large" type="button">Pause</button>
-            <button class="control-button stop large" type="button">Emergency Stop</button>
+            <button class="control-button pause large" type="button" on:click={() => sendOperatorAction("pause_pressed")}>Pause</button>
+            <button class="control-button stop large" type="button" on:click={() => sendOperatorAction("emergency_stop_pressed")}>Emergency Stop</button>
           </div>
         </div>
       </div>

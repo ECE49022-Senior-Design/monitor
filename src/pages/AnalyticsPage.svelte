@@ -1,4 +1,6 @@
 <script>
+  import { sendOperatorAction } from "../lib/backend.js";
+
   export let snapshot;
 </script>
 
@@ -19,8 +21,8 @@
       <span class="pill">Uptime</span>
       <strong>{snapshot.uptime}</strong>
       <div class="control-group">
-        <button class="control-button pause" type="button">Pause</button>
-        <button class="control-button stop" type="button">Emergency Stop</button>
+        <button class="control-button pause" type="button" on:click={() => sendOperatorAction("pause_pressed")}>Pause</button>
+        <button class="control-button stop" type="button" on:click={() => sendOperatorAction("emergency_stop_pressed")}>Emergency Stop</button>
       </div>
       <a class="nav-button" href="#main">Back</a>
     </div>
