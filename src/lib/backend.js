@@ -186,36 +186,40 @@ export async function fetchRobotSnapshot() {
   });
 }
 
-export function connectMainframeSocket(onSnapshot) {
-  const socket = new WebSocket(MAINFRAME_WS_URL);
-  mainframeSocket = socket;
+export function connectMainframeSocket(onMessage) {
+  const socket = new WebSocket("ws://localhost:8080");
 
-  socket.addEventListener("open", () => {
+  socket.onopen = () => {
+    console.log("[monitor] connected to mainframe");
+
     socket.send(JSON.stringify({
       type: "hello",
-      data: { role: "dashboard", name: "monitor-ui" },
+      data: {
+        role: "monitor",
+        name: "dashboard-ui",
+      },
     }));
-  });
+  };
 
-  socket.addEventListener("message", (event) => {
+  socket.onmessage = (event) => {
     try {
       const payload = JSON.parse(event.data);
-      onSnapshot(payload);
-    } catch {
-      // ignore malformed payloads
-    }
-  });
-
-  socket.addEventListener("error", () => {
-    // keep UI running with last known state
-  });
-
-  return () => {
-    if (mainframeSocket === socket) mainframeSocket = null;
-    if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-      socket.close();
+      console.log("[monitor] received:", payload);
+      onMessage(payload);
+    } catch (err) {
+      console.error("[monitor] invalid websocket message:", err);
     }
   };
+
+  socket.onerror = (err) => {
+    console.error("[monitor] websocket error:", err);
+  };
+
+  socket.onclose = () => {
+    console.log("[monitor] disconnected from mainframe");
+  };
+
+  return () => socket.close();
 }
 
 export function sendOperatorAction(action) {
