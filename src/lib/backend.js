@@ -39,6 +39,10 @@ function isSortingStatus(status = "") {
   return normalized.includes("sort") || normalized.includes("busy");
 }
 
+function isFailedStatus(status = "") {
+  return String(status).toLowerCase().includes("fail");
+}
+
 function toBucket(label = "") {
   const normalized = String(label).trim().toLowerCase();
   if (normalized === "trash") return "trash";
@@ -50,8 +54,9 @@ export function createPlaceholderSnapshot() {
   return {
     status: "IDLE",
     statusCode: "I2LF",
-    uptime: "12:14:32",
+    uptime: "00:00",
     serverUrl: "",
+    currentItem: "None",
     lastItem: "None",
     counts: {
       trash: 0,
@@ -100,7 +105,7 @@ export function normalizeMainframePayload(payload = {}, currentSnapshot = create
 
     return {
       ...currentSnapshot,
-      lastItem: effectiveLabel,
+      currentItem: effectiveLabel,
       counts: nextCounts,
       serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
       speedHistory: withSpeedHistory(currentSnapshot, Math.round(55 + Math.random() * 35)),
@@ -131,7 +136,9 @@ export function normalizeMainframePayload(payload = {}, currentSnapshot = create
     }
     if (source === "arm" && data.status) {
       const armStatus = String(data.status).toUpperCase();
-      const nextStatus = isSortingStatus(armStatus)
+      const nextStatus = isFailedStatus(armStatus)
+        ? "FAILED"
+        : isSortingStatus(armStatus)
         ? "SORTING"
         : armStatus === "IDLE" && isSortingStatus(currentSnapshot.status)
           ? "COMPLETE"
@@ -142,7 +149,13 @@ export function normalizeMainframePayload(payload = {}, currentSnapshot = create
         status: nextStatus,
         statusCode: statusToCode(nextStatus),
         serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
-        _cycleLabel: nextStatus === "COMPLETE" ? null : currentSnapshot._cycleLabel,
+        currentItem: nextStatus === "COMPLETE" || nextStatus === "FAILED"
+          ? "None"
+          : data.currentObject ?? currentSnapshot.currentItem,
+        lastItem: nextStatus === "COMPLETE" || nextStatus === "FAILED"
+          ? currentSnapshot.currentItem
+          : currentSnapshot.lastItem,
+        _cycleLabel: nextStatus === "COMPLETE" || nextStatus === "FAILED" ? null : currentSnapshot._cycleLabel,
         _cycleCounted: nextStatus === "COMPLETE" ? true : currentSnapshot._cycleCounted,
       };
     }
@@ -157,7 +170,7 @@ export function normalizeMainframePayload(payload = {}, currentSnapshot = create
       ...currentSnapshot,
       status: "CHECKING",
       statusCode: statusToCode("CHECKING"),
-      lastItem: label,
+      currentItem: label,
       counts: {
         ...currentSnapshot.counts,
         [bucket]: currentSnapshot.counts[bucket] + (canCount ? 1 : 0),
@@ -178,20 +191,40 @@ export function normalizeMainframePayload(payload = {}, currentSnapshot = create
       status: "SORTING",
       statusCode: statusToCode("SORTING"),
       serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
+      currentItem: payload?.data?.label ?? currentSnapshot.currentItem,
     };
   }
 
   if (type === "result" && payload?.source === "arm") {
+    const armSucceeded = payload?.data?.success === true || payload?.data?.ok === true;
+
     return {
       ...currentSnapshot,
-      status: "COMPLETE",
-      statusCode: statusToCode("COMPLETE"),
+      status: armSucceeded ? "COMPLETE" : "FAILED",
+      statusCode: statusToCode(armSucceeded ? "COMPLETE" : "FAILED"),
       serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
+      currentItem: "None",
+      lastItem: payload?.data?.label ?? currentSnapshot.currentItem,
       cvStageDone: 0,
       cvStageTotal: 0,
       cvStageName: "",
       _cycleLabel: null,
-      _cycleCounted: true,
+      _cycleCounted: armSucceeded,
+    };
+  }
+
+  if (type === "pick_event" && payload?.source === "arm" && payload?.data?.success === false) {
+    return {
+      ...currentSnapshot,
+      status: "FAILED",
+      statusCode: statusToCode("FAILED"),
+      serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
+      currentItem: "None",
+      lastItem: currentSnapshot.currentItem,
+      cvStageDone: 0,
+      cvStageTotal: 0,
+      cvStageName: "",
+      _cycleLabel: null,
     };
   }
 
@@ -203,7 +236,7 @@ export function normalizeMainframePayload(payload = {}, currentSnapshot = create
     if (!bucket) {
       return {
         ...currentSnapshot,
-        lastItem: effectiveLabel,
+        currentItem: effectiveLabel,
         serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
         _cycleLabel: lockedLabel || null,
       };
@@ -211,7 +244,7 @@ export function normalizeMainframePayload(payload = {}, currentSnapshot = create
     const canCount = !currentSnapshot._cycleCounted;
     return {
       ...currentSnapshot,
-      lastItem: effectiveLabel,
+      currentItem: effectiveLabel,
       counts: {
         ...currentSnapshot.counts,
         [bucket]: currentSnapshot.counts[bucket] + (canCount ? 1 : 0),
@@ -229,6 +262,7 @@ export function normalizeMainframePayload(payload = {}, currentSnapshot = create
     statusCode: payload.statusCode ?? currentSnapshot.statusCode,
     uptime: payload.uptime ?? currentSnapshot.uptime,
     serverUrl: payload.serverUrl ?? currentSnapshot.serverUrl,
+    currentItem: payload.currentItem ?? currentSnapshot.currentItem,
     lastItem: payload.lastItem ?? currentSnapshot.lastItem,
     counts: {
       trash: payload.counts?.trash ?? currentSnapshot.counts.trash,
@@ -300,5 +334,10 @@ export function sendOperatorAction(action) {
       at: Date.now(),
     },
   }));
+  if (action === "begin_cv_detection" && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("monitor-run-started", {
+      detail: { startedAt: Date.now() },
+    }));
+  }
   return true;
 }

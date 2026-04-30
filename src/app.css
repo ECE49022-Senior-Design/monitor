@@ -5,6 +5,7 @@ body {
   background: radial-gradient(circle at top left, #172a3a, #0b0f14 60%);
   color: #f2f5f7;
   font-family: "Space Grotesk", sans-serif;
+  overflow: hidden;
 }
 
 * {
@@ -12,18 +13,18 @@ body {
 }
 
 .screen {
-  min-height: 100vh;
-  padding: 32px;
+  height: 100vh;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 20px;
 }
 
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px;
+  padding: 16px 22px;
   background: rgba(10, 18, 25, 0.8);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -45,7 +46,7 @@ body {
 }
 
 .title {
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 600;
 }
 
@@ -168,15 +169,16 @@ body {
 
 .control-button.large {
   min-width: 180px;
-  padding: 14px 20px;
-  font-size: 16px;
+  padding: 16px 24px;
+  font-size: 18px;
 }
 
 .panel-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.7fr);
+  gap: 20px;
   flex: 1;
+  min-height: 0;
 }
 
 .panel-grid.single {
@@ -187,7 +189,7 @@ body {
 .counter-panel {
   background: rgba(15, 24, 33, 0.85);
   border-radius: 22px;
-  padding: 26px;
+  padding: 22px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
   overflow: hidden;
@@ -227,14 +229,15 @@ h2 {
 .status-body {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .status-indicator {
   display: flex;
   align-items: center;
   gap: 14px;
-  font-size: 18px;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .pulse {
@@ -269,23 +272,51 @@ h2 {
 .meta strong {
   display: block;
   margin-top: 8px;
-  font-size: 18px;
+  font-size: 24px;
 }
 
 .flow {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .flow-step {
   display: flex;
-  gap: 14px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 18px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid transparent;
   transition: background 160ms ease, border-color 160ms ease;
+  min-height: 92px;
+  width: 100%;
+}
+
+.flow-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 24px;
+}
+
+.flow-step strong {
+  display: block;
+  font-size: 22px;
+  line-height: 1.1;
+  min-width: 380px;
+}
+
+.flow-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
 }
 
 .flow-step.completed {
@@ -294,22 +325,23 @@ h2 {
 }
 
 .flow-step .dot {
-  width: 10px;
-  height: 10px;
-  margin-top: 6px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: rgba(242, 245, 247, 0.45);
+  flex: 0 0 auto;
 }
 
 .flow-step p {
   margin: 4px 0 0;
-  font-size: 12px;
-  color: rgba(242, 245, 247, 0.6);
+  font-size: 15px;
+  line-height: 1.35;
+  color: #f2f5f7;
 }
 
 .flow-step .stage-detail {
-  color: rgba(242, 245, 247, 0.82);
-  font-size: 11px;
+  color: #f2f5f7;
+  font-size: 13px;
   letter-spacing: 0.04em;
 }
 
@@ -345,6 +377,16 @@ h2 {
 .flow-step.complete.active .dot {
   background: #6ef7c4;
   box-shadow: 0 0 10px rgba(110, 247, 196, 0.7);
+}
+
+.flow-step.complete.failed {
+  border-color: rgba(255, 92, 92, 0.55);
+  background: rgba(255, 92, 92, 0.14);
+}
+
+.flow-step.complete.failed .dot {
+  background: #ff8d8d;
+  box-shadow: 0 0 10px rgba(255, 92, 92, 0.7);
 }
 
 .counter-panel {
@@ -559,5 +601,32 @@ h2 {
 
   .inline-controls {
     flex-direction: column;
+  }
+
+  .status-indicator {
+    font-size: 20px;
+  }
+
+  .flow-step strong {
+    font-size: 22px;
+  }
+
+  .flow-content {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .flow-copy {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .flow-step p {
+    font-size: 15px;
+  }
+
+  .flow-step .stage-detail {
+    font-size: 13px;
   }
 }

@@ -6,6 +6,7 @@
     const normalized = String(status).toLowerCase();
     if (normalized.includes("check")) return 0;
     if (normalized.includes("sort") || normalized.includes("busy")) return 1;
+    if (normalized.includes("fail")) return 2;
     if (normalized.includes("complete") || normalized.includes("done")) return 2;
     return -1;
   }
@@ -29,10 +30,7 @@
   <header class="topbar">
     <div class="brand">
       <div class="brand-dot"></div>
-      <div>
-        <div class="title">Main</div>
-        <div class="subtitle">Trash Sorting Monitor</div>
-      </div>
+      <div class="title">Trash Sorting Monitor</div>
     </div>
     <div class="clock">
       <div class="server">
@@ -49,7 +47,6 @@
     <article class="status-panel">
       <div class="panel-header">
         <h2>Status</h2>
-        <span class="chip">{snapshot.statusCode}</span>
       </div>
 
       <div class="status-body">
@@ -59,36 +56,42 @@
         </div>
         <div class="status-metadata">
           <div class="meta">
-            <span>Last Item</span>
-            <strong>{snapshot.lastItem}</strong>
+            <span>Current Item</span>
+            <strong>{snapshot.currentItem}</strong>
           </div>
           <div class="meta">
-            <span>Mode</span>
-            <strong>Auto Sort</strong>
+            <span>Last Item</span>
+            <strong>{snapshot.lastItem}</strong>
           </div>
         </div>
 
         <div class="flow">
           <div class="flow-step checking" class:active={currentFlowStep === 0} class:completed={currentFlowStep > 0}>
             <span class="dot"></span>
-            <div>
+            <div class="flow-content">
               <strong>Checking</strong>
-              <p>Scanning incoming item</p>
-              <p class="stage-detail">{checkingStageLabel}</p>
+              <div class="flow-copy">
+                <p>Scanning incoming item</p>
+                <p class="stage-detail">{checkingStageLabel}</p>
+              </div>
             </div>
           </div>
           <div class="flow-step sorting" class:active={currentFlowStep === 1} class:completed={currentFlowStep > 1}>
             <span class="dot"></span>
-            <div>
+            <div class="flow-content">
               <strong>Sorting</strong>
-              <p>Assigning to bin</p>
+              <div class="flow-copy">
+                <p>Assigning to bin</p>
+              </div>
             </div>
           </div>
-          <div class="flow-step complete" class:active={currentFlowStep === 2}>
+          <div class="flow-step complete" class:active={currentFlowStep === 2} class:failed={snapshot.status.toLowerCase().includes("fail")}>
             <span class="dot"></span>
-            <div>
+            <div class="flow-content">
               <strong>Complete</strong>
-              <p>Logged and cleared</p>
+              <div class="flow-copy">
+                <p>Logged and cleared</p>
+              </div>
             </div>
           </div>
         </div>
@@ -96,9 +99,8 @@
         <div class="controls-section">
           <div class="section-label">Controls</div>
           <div class="inline-controls">
-            <button class="control-button pause large" type="button" on:click={() => sendOperatorAction("pause_pressed")}>Pause</button>
-            <button class="control-button stop large" type="button" on:click={() => sendOperatorAction("emergency_stop_pressed")}>Emergency Stop</button>
             <button class="control-button begin large" type="button" on:click={() => sendOperatorAction("begin_cv_detection")}>Begin CV</button>
+            <button class="control-button stop large" type="button" on:click={() => sendOperatorAction("emergency_stop_pressed")}>Emergency Stop</button>
           </div>
         </div>
       </div>
