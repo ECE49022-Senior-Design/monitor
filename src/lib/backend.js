@@ -34,6 +34,11 @@ function isCompleteStatus(status = "") {
   return normalized.includes("complete") || normalized.includes("done");
 }
 
+function isSortingStatus(status = "") {
+  const normalized = String(status).toLowerCase();
+  return normalized.includes("sort") || normalized.includes("busy");
+}
+
 function toBucket(label = "") {
   const normalized = String(label).trim().toLowerCase();
   if (normalized === "trash") return "trash";
@@ -54,6 +59,9 @@ export function createPlaceholderSnapshot() {
     },
     analytics: DEFAULT_ANALYTICS.map((item) => ({ ...item })),
     speedHistory: [...DEFAULT_SPEED_HISTORY],
+    cvStageDone: 0,
+    cvStageTotal: 0,
+    cvStageName: "",
     _cycleLabel: null,
     _cycleCounted: false,
   };
@@ -114,21 +122,77 @@ export function normalizeMainframePayload(payload = {}, currentSnapshot = create
         statusCode: data.status ? statusToCode(data.status) : currentSnapshot.statusCode,
         serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
         speedHistory: withSpeedHistory(currentSnapshot, speed),
+        cvStageDone: data.stageDone ?? currentSnapshot.cvStageDone,
+        cvStageTotal: data.allStage ?? currentSnapshot.cvStageTotal,
+        cvStageName: data.stageName ?? currentSnapshot.cvStageName,
         _cycleLabel: data.status && isCheckingStatus(data.status) ? null : currentSnapshot._cycleLabel,
         _cycleCounted: data.status && isCheckingStatus(data.status) ? false : currentSnapshot._cycleCounted,
       };
     }
     if (source === "arm" && data.status) {
       const armStatus = String(data.status).toUpperCase();
+      const nextStatus = isSortingStatus(armStatus)
+        ? "SORTING"
+        : armStatus === "IDLE" && isSortingStatus(currentSnapshot.status)
+          ? "COMPLETE"
+          : currentSnapshot.status;
+
       return {
         ...currentSnapshot,
-        status: armStatus,
-        statusCode: statusToCode(armStatus),
+        status: nextStatus,
+        statusCode: statusToCode(nextStatus),
         serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
-        _cycleLabel: isCheckingStatus(armStatus) ? null : currentSnapshot._cycleLabel,
-        _cycleCounted: isCheckingStatus(armStatus) ? false : currentSnapshot._cycleCounted,
+        _cycleLabel: nextStatus === "COMPLETE" ? null : currentSnapshot._cycleLabel,
+        _cycleCounted: nextStatus === "COMPLETE" ? true : currentSnapshot._cycleCounted,
       };
     }
+  }
+
+  if (type === "object_detected") {
+    const label = String(payload?.data?.object || "Unknown");
+    const bucket = payload?.data?.recycleable ? "recycle" : "trash";
+    const canCount = !currentSnapshot._cycleCounted;
+
+    return {
+      ...currentSnapshot,
+      status: "CHECKING",
+      statusCode: statusToCode("CHECKING"),
+      lastItem: label,
+      counts: {
+        ...currentSnapshot.counts,
+        [bucket]: currentSnapshot.counts[bucket] + (canCount ? 1 : 0),
+      },
+      serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
+      speedHistory: withSpeedHistory(currentSnapshot, Math.round(55 + Math.random() * 35)),
+      cvStageDone: currentSnapshot.cvStageDone,
+      cvStageTotal: currentSnapshot.cvStageTotal,
+      cvStageName: currentSnapshot.cvStageName,
+      _cycleLabel: label,
+      _cycleCounted: currentSnapshot._cycleCounted || canCount,
+    };
+  }
+
+  if (type === "ack" && payload?.source === "arm") {
+    return {
+      ...currentSnapshot,
+      status: "SORTING",
+      statusCode: statusToCode("SORTING"),
+      serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
+    };
+  }
+
+  if (type === "result" && payload?.source === "arm") {
+    return {
+      ...currentSnapshot,
+      status: "COMPLETE",
+      statusCode: statusToCode("COMPLETE"),
+      serverUrl: currentSnapshot.serverUrl || MAINFRAME_WS_URL,
+      cvStageDone: 0,
+      cvStageTotal: 0,
+      cvStageName: "",
+      _cycleLabel: null,
+      _cycleCounted: true,
+    };
   }
 
   if (type === "event" && payload?.data?.kind === "detection") {
@@ -176,6 +240,9 @@ export function normalizeMainframePayload(payload = {}, currentSnapshot = create
     speedHistory: Array.isArray(payload.speedHistory) && payload.speedHistory.length > 0
       ? payload.speedHistory
       : currentSnapshot.speedHistory,
+    cvStageDone: payload.cvStageDone ?? currentSnapshot.cvStageDone,
+    cvStageTotal: payload.cvStageTotal ?? currentSnapshot.cvStageTotal,
+    cvStageName: payload.cvStageName ?? currentSnapshot.cvStageName,
   };
 }
 
@@ -187,7 +254,8 @@ export async function fetchRobotSnapshot() {
 }
 
 export function connectMainframeSocket(onMessage) {
-  const socket = new WebSocket("ws://localhost:8080");
+  const socket = new WebSocket(MAINFRAME_WS_URL);
+  mainframeSocket = socket;
 
   socket.onopen = () => {
     console.log("[monitor] connected to mainframe");
@@ -202,24 +270,24 @@ export function connectMainframeSocket(onMessage) {
   };
 
   socket.onmessage = (event) => {
-    try {
-      const payload = JSON.parse(event.data);
-      console.log("[monitor] received:", payload);
-      onMessage(payload);
-    } catch (err) {
-      console.error("[monitor] invalid websocket message:", err);
-    }
+    const payload = JSON.parse(event.data);
+    console.log("[monitor] received:", payload);
+    onMessage(payload);
   };
 
-  socket.onerror = (err) => {
-    console.error("[monitor] websocket error:", err);
+  return {
+    send: (msg) => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(msg));
+      }
+    },
+    disconnect: () => {
+      if (mainframeSocket === socket) {
+        mainframeSocket = null;
+      }
+      socket.close();
+    },
   };
-
-  socket.onclose = () => {
-    console.log("[monitor] disconnected from mainframe");
-  };
-
-  return () => socket.close();
 }
 
 export function sendOperatorAction(action) {

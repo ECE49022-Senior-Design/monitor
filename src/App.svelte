@@ -20,16 +20,19 @@
 
   onMount(async () => {
     snapshot = await fetchRobotSnapshot();
-    const disconnect = connectMainframeSocket((payload) => {
+
+    const socketControls = connectMainframeSocket((payload) => {
       snapshot = normalizeMainframePayload(payload, snapshot);
     });
-    syncPage();
-    window.addEventListener("hashchange", syncPage);
-    return () => {
-      window.removeEventListener("hashchange", syncPage);
-      disconnect();
-    };
-  });
+
+  syncPage();
+  window.addEventListener("hashchange", syncPage);
+
+  return () => {
+    window.removeEventListener("hashchange", syncPage);
+    socketControls.disconnect();
+  };
+});
 </script>
 
 {#if page === "analytics"}

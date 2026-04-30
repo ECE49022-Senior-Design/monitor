@@ -130,6 +130,12 @@ body {
   color: #ff8d8d;
 }
 
+.control-button.begin {
+  background: rgba(110, 247, 196, 0.14);
+  border-color: rgba(110, 247, 196, 0.45);
+  color: #6ef7c4;
+}
+
 .control-button:hover {
   transform: translateY(-1px);
 }
@@ -299,6 +305,12 @@ h2 {
   margin: 4px 0 0;
   font-size: 12px;
   color: rgba(242, 245, 247, 0.6);
+}
+
+.flow-step .stage-detail {
+  color: rgba(242, 245, 247, 0.82);
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
 
 .flow-step.completed .dot {

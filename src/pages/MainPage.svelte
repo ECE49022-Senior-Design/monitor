@@ -2,7 +2,6 @@
   import { sendOperatorAction } from "../lib/backend.js";
 
   export let snapshot;
-
   function getFlowStep(status = "") {
     const normalized = String(status).toLowerCase();
     if (normalized.includes("check")) return 0;
@@ -12,6 +11,9 @@
   }
 
   $: currentFlowStep = getFlowStep(snapshot.status);
+  $: checkingStageLabel = snapshot.cvStageDone && snapshot.cvStageName
+    ? `Stage: ${snapshot.cvStageDone}${snapshot.cvStageTotal ? `/${snapshot.cvStageTotal}` : ""} ${snapshot.cvStageName}`
+    : "Stage: Waiting for CV";
 
   $: speedPoints = (snapshot.speedHistory || []).map((value, index, history) => {
     const width = 240;
@@ -72,6 +74,7 @@
             <div>
               <strong>Checking</strong>
               <p>Scanning incoming item</p>
+              <p class="stage-detail">{checkingStageLabel}</p>
             </div>
           </div>
           <div class="flow-step sorting" class:active={currentFlowStep === 1} class:completed={currentFlowStep > 1}>
@@ -95,6 +98,7 @@
           <div class="inline-controls">
             <button class="control-button pause large" type="button" on:click={() => sendOperatorAction("pause_pressed")}>Pause</button>
             <button class="control-button stop large" type="button" on:click={() => sendOperatorAction("emergency_stop_pressed")}>Emergency Stop</button>
+            <button class="control-button begin large" type="button" on:click={() => sendOperatorAction("begin_cv_detection")}>Begin CV</button>
           </div>
         </div>
       </div>
